@@ -113,6 +113,10 @@ export function getModelArgName(
       return `${modelName}CreateArgs`
     case DMMF.ModelAction.deleteMany:
       return `${modelName}DeleteManyArgs`
+    case DMMF.ModelAction.aggregate:
+      return getAggregateArgsName(modelName)
+    case DMMF.ModelAction.count:
+      return getModelArgName(modelName, DMMF.ModelAction.findMany)
   }
 }
 
@@ -121,7 +125,9 @@ export function getDefaultArgName(
   modelName: string,
   action: DMMF.ModelAction,
 ): string {
-  const mapping = dmmf.mappings.modelOperations.find((m) => m.model === modelName)!
+  const mapping = dmmf.mappings.modelOperations.find(
+    (m) => m.model === modelName,
+  )!
 
   const fieldName = mapping[action]
   const operation = getOperation(action)
@@ -133,7 +139,8 @@ export function getDefaultArgName(
 export function getOperation(action: DMMF.ModelAction): 'query' | 'mutation' {
   if (
     action === DMMF.ModelAction.findMany ||
-    action === DMMF.ModelAction.findUnique || 'findOne'
+    action === DMMF.ModelAction.findUnique ||
+    'findOne'
   ) {
     return 'query'
   }
@@ -206,6 +213,8 @@ export function getSelectReturnType({
   isField = false, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: SelectReturnTypeOptions): string {
   const isList = actionName === DMMF.ModelAction.findMany
+  if(actionName === 'count') return `Promise<number>`
+  if(actionName === 'aggregate') return `Promise<${getAggregateGetName(name)}<T>>`
 
   if (actionName === 'deleteMany' || actionName === 'updateMany') {
     return `Promise<BatchPayload>`
@@ -225,9 +234,19 @@ export function getSelectReturnType({
     )}<T>${listClose}${promiseClose}>`
   }
 
-  return `CheckSelect<T, Prisma__${name}Client<${getType(name, isList)}${(actionName === 'findUnique' || actionName === 'findOne' || actionName === 'findFirst') ? ' | null' : ''
-    }>, Prisma__${name}Client<${getType(getPayloadName(name) + '<T>', isList)}${(actionName === 'findUnique' || actionName === 'findOne' || actionName === 'findFirst') ? ' | null' : ''
-    }>>`
+  return `CheckSelect<T, Prisma__${name}Client<${getType(name, isList)}${
+    actionName === 'findUnique' ||
+    actionName === 'findOne' ||
+    actionName === 'findFirst'
+      ? ' | null'
+      : ''
+  }>, Prisma__${name}Client<${getType(getPayloadName(name) + '<T>', isList)}${
+    actionName === 'findUnique' ||
+    actionName === 'findOne' ||
+    actionName === 'findFirst'
+      ? ' | null'
+      : ''
+  }>>`
 }
 
 export function isQueryAction(
@@ -238,7 +257,9 @@ export function isQueryAction(
     return false
   }
   const result =
-    action === DMMF.ModelAction.findUnique || action === DMMF.ModelAction.findMany || action === 'findOne'
+    action === DMMF.ModelAction.findUnique ||
+    action === DMMF.ModelAction.findMany ||
+    action === 'findOne'
   return operation === 'query' ? result : !result
 }
 
