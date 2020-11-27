@@ -65,7 +65,7 @@ export class Model implements Generatable {
         argsTypes.push(
           new MinimalArgsType(field.args, model, action as DMMF.ModelAction, this.collector),
         )
-      } else {
+      } else if(action !== 'aggregate') {
         argsTypes.push(
           new ArgsType(field.args, model, action as DMMF.ModelAction, this.collector),
         )
